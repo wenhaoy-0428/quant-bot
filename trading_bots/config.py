@@ -12,6 +12,7 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY") or ""
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+MODEL_NAME = os.getenv("MODEL_NAME", "deepseek-chat")
 
 # Instantiate DeepSeek client (safe even if key is missing; calls will fail loudly)
 deepseek_client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)

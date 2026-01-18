@@ -9,6 +9,7 @@ import pandas as pd
 import requests
 
 from trading_bots.config import (
+    MODEL_NAME,
     TRADING_FEE_RATE,
     TRADE_CONFIG,
     deepseek_client,
@@ -692,7 +693,7 @@ def analyze_with_deepseek(price_data):
 
     try:
         response = deepseek_client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL_NAME,
             messages=[
                 {
                     "role": "system",
@@ -828,7 +829,7 @@ def analyze_with_deepseek_trend_king(price_data):
 
     try:
         response = deepseek_client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": (
                     "你是指挥官，必须执行对称的BUY/SELL 8条规则，禁止逆大趋势、禁止越权修改风控参数。"

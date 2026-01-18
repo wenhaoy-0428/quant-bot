@@ -14,6 +14,7 @@ from pathlib import Path
 from trading_bots.guidance import save_guidance
 from trading_bots.main_bot import get_btc_ohlcv_enhanced
 from trading_bots.signals import analyze_with_deepseek_trend_king_with_retry
+from trading_bots.config import MODEL_NAME, deepseek_client
 
 
 LOG_PATH = Path(os.getenv("COMMANDER_LOG_PATH", "logs/commander.log"))
@@ -84,6 +85,34 @@ def update_guidance_once():
     except Exception as exc:
         log(f"Commander 异常: {exc}")
         traceback.print_exc()
+
+
+def suggest_parameters_from_backtest(metrics: dict):
+    """Use DeepSeek to suggest parameter tweaks based on backtest metrics."""
+    prompt = (
+        "You are a trading risk assistant. Given backtest metrics, propose 3 concise parameter tweaks "
+        "to improve risk-adjusted returns. Respond in compact JSON with keys: tweaks (array of strings), "
+        "risk_note (string), and confidence (0-1). Keep answers short."
+        f"\nMetrics: {json.dumps(metrics)}"
+    )
+    try:
+        resp = deepseek_client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "system", "content": "You are a concise quant assistant."}, {"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=240,
+        )
+        content = resp.choices[0].message.content if resp.choices else "{}"
+        log(f"Commander 参数建议生成成功")
+        return content
+    except Exception as exc:
+        log(f"Commander 参数建议失败: {exc}")
+        # fallback heuristic
+        return json.dumps({
+            "tweaks": ["Reduce leverage by 1-2x", "Tighten stop loss by 5-10%", "Lower base risk per trade by 25% until win-rate improves"],
+            "risk_note": "Fallback heuristic used because AI call failed.",
+            "confidence": 0.2,
+        })
 
 
 def main():
