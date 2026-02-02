@@ -25,7 +25,7 @@ start-dashboard = "trading_dashboard:main"
 package = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["trading_bots", "src"]
+packages = ["src/core", "trading_bots"]
 
 [build-system]
 requires = ["hatchling"]

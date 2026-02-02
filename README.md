@@ -56,7 +56,9 @@ cp .env.example .env
 nano .env
 ```
 *必需配置项：*
-- `DEEPSEEK_API_KEY`: DeepSeek 大模型接口密钥
+- `AI_API_KEY`: AI 模型接口密钥（支持 DeepSeek, OpenAI 等）
+- `AI_BASE_URL`: AI API 基础 URL
+- `MODEL_NAME`: 使用的模型名称
 - `OKX_API_KEY`, `OKX_SECRET`, `OKX_PASSWORD`: OKX 交易所 V5 API
 
 ### 4. 启动系统
