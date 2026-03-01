@@ -1,7 +1,14 @@
-from core.services import exchange_service
+"""Bot entry point.
 
-def main():
-    exchange_service.reload_markets()
+Creates a TradingBot and calls run(). That's it.
+"""
+
+from core.models.trading_bot import TradingBot
+
+
+def main() -> None:
+    TradingBot().run()
+
 
 if __name__ == "__main__":
     main()

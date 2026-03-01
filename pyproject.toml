@@ -18,14 +18,14 @@ dependencies = [
 ]
 
 [project.scripts]
-start-bot = "trading_bots.main_bot:main"
+start-bot = "app.main:main"
 start-dashboard = "trading_dashboard:main"
 
 [tool.uv]
 package = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/core", "trading_bots"]
+packages = ["src/core", "src/app", "trading_bots"]
 
 [build-system]
 requires = ["hatchling"]

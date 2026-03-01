@@ -198,9 +198,9 @@ class ExchangeService:
     
     def fetch_ohlcv(
         self,
-        symbol: Optional[str] = None,
-        timeframe: Optional[str] = None,
-        limit: Optional[int] = None
+        symbol: str,
+        timeframe: str,
+        limit: str
     ) -> List[List]:
         """
         Fetch OHLCV (candlestick) data.
@@ -213,10 +213,6 @@ class ExchangeService:
         Returns:
             List of OHLCV data [timestamp, open, high, low, close, volume]
         """
-        symbol = symbol or config.symbol
-        timeframe = timeframe or config.timeframe
-        limit = limit or config.data_points
-        
         return self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
     
     def fetch_ticker(self, symbol: Optional[str] = None) -> Dict[str, Any]:
@@ -601,7 +597,7 @@ class ExchangeService:
     
     def cancel_tp_sl_orders(
         self,
-        symbol: Optional[str] = None,
+        symbol: str,
         order_ids: Optional[Dict[str, str]] = None
     ) -> bool:
         """
@@ -645,8 +641,6 @@ class ExchangeService:
             - 如果未提供 order_ids，则查询所有待处理的条件单
             - 即使没有订单也可以安全调用
         """
-        symbol = symbol or config.symbol
-        
         try:
             markets = self.reload_markets()
             market = markets[symbol]
