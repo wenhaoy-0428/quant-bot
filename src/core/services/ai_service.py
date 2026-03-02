@@ -29,7 +29,7 @@ from openai import OpenAI
 from core.config import Config, config as _default_config
 from core.services.sentiment_service import SentimentService, sentiment_service as _default_sentiment
 from core.services.signal_service import SignalService, signal_service as _default_signals
-from trading_bots.indicators import calculate_volatility
+from core.utils.indicators import calculate_volatility
 
 
 class AIService:

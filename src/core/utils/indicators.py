@@ -1,9 +1,21 @@
+"""Technical analysis utility functions.
+
+Pure, stateless pandas/numpy transforms used by multiple services:
+  - MarketDataService  (calculate_technical_indicators, get_market_trend,
+                        get_support_resistance_levels)
+  - SignalService      (calculate_volatility, detect_market_regime)
+  - AIService          (calculate_volatility)
+
+Replaces ``trading_bots/indicators.py``.  No logic changes — same
+algorithms, just moved into the src/ package tree.
+"""
+
 import numpy as np
 import pandas as pd
 
 
 def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
-    """Compute ATR series with a rolling mean fallback on failures."""
+    """Compute ATR series with a rolling-mean fallback on failures."""
     try:
         high_low = df['high'] - df['low']
         high_close = np.abs(df['high'] - df['close'].shift())
@@ -15,7 +27,7 @@ def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
 
 
 def calculate_volatility(df: pd.DataFrame, period: int = 20) -> float:
-    """Annualized volatility based on percentage returns."""
+    """Annualised volatility based on percentage returns (15-minute candles)."""
     try:
         returns = df['close'].pct_change()
         volatility = returns.rolling(period).std() * np.sqrt(365 * 24 * 4)
@@ -25,7 +37,7 @@ def calculate_volatility(df: pd.DataFrame, period: int = 20) -> float:
 
 
 def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """Enhance OHLCV dataframe with common indicators."""
+    """Enhance an OHLCV dataframe with common indicators in-place."""
     try:
         df['sma_5'] = df['close'].rolling(window=5, min_periods=1).mean()
         df['sma_20'] = df['close'].rolling(window=20, min_periods=1).mean()
@@ -59,7 +71,7 @@ def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_market_trend(df: pd.DataFrame) -> dict:
-    """Summarize trend direction, strength, and price context."""
+    """Summarise trend direction, strength, and price context."""
     try:
         current_price = df['close'].iloc[-1]
         trend_short = "上涨" if current_price > df['sma_20'].iloc[-1] else "下跌"
@@ -99,7 +111,7 @@ def get_market_trend(df: pd.DataFrame) -> dict:
 
 
 def detect_market_regime(df: pd.DataFrame) -> str:
-    """Identify trending vs ranging market regime."""
+    """Identify whether the market is trending or ranging."""
     try:
         current_price = df['close'].iloc[-1]
         sma_20 = df['sma_20'].iloc[-1]
@@ -127,24 +139,19 @@ def detect_market_regime(df: pd.DataFrame) -> str:
 
 
 def get_support_resistance_levels(df: pd.DataFrame, lookback: int = 20) -> dict:
-    """Compute static/dynamic support and resistance levels."""
+    """Compute static and dynamic support/resistance levels."""
     try:
         recent_high = df['high'].tail(lookback).max()
         recent_low = df['low'].tail(lookback).min()
         current_price = df['close'].iloc[-1]
 
-        resistance_level = recent_high
-        support_level = recent_low
-        bb_upper = df['bb_upper'].iloc[-1]
-        bb_lower = df['bb_lower'].iloc[-1]
-
         return {
-            'static_resistance': resistance_level,
-            'static_support': support_level,
-            'dynamic_resistance': bb_upper,
-            'dynamic_support': bb_lower,
-            'price_vs_resistance': ((resistance_level - current_price) / current_price) * 100,
-            'price_vs_support': ((current_price - support_level) / support_level) * 100,
+            'static_resistance': recent_high,
+            'static_support': recent_low,
+            'dynamic_resistance': df['bb_upper'].iloc[-1],
+            'dynamic_support': df['bb_lower'].iloc[-1],
+            'price_vs_resistance': ((recent_high - current_price) / current_price) * 100,
+            'price_vs_support': ((current_price - recent_low) / recent_low) * 100,
         }
     except Exception:
         return {}

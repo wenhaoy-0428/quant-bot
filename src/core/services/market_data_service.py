@@ -19,10 +19,7 @@ import pandas as pd
 
 from core.services.exchange_service import ExchangeService, exchange_service
 from core.config import config
-
-# These pure-function modules stay in trading_bots for now; they will be
-# ported to src/ in a later refactor pass.
-from trading_bots.indicators import (
+from core.utils.indicators import (
     calculate_technical_indicators,
     get_market_trend,
     get_support_resistance_levels,

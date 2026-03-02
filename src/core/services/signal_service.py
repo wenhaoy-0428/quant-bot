@@ -25,7 +25,7 @@ from typing import Optional
 from core.config import config
 from core.models.performance_tracker import PerformanceTracker, tracker
 from trading_bots.guidance import load_guidance
-from trading_bots.indicators import calculate_volatility, detect_market_regime
+from core.utils.indicators import calculate_volatility, detect_market_regime
 
 
 class SignalService:
