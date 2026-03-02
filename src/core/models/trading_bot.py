@@ -21,8 +21,9 @@ from datetime import datetime
 from core.config import config
 from core.services.exchange_service import ExchangeService, exchange_service
 from core.services.market_data_service import MarketDataService, market_data_service
+from core.services.sentiment_service import SentimentService, sentiment_service
+from core.services.signal_service import SignalService, signal_service
 from core.services.trade_service import TradeService, trade_service
-from trading_bots.signals import check_sentiment_api_health, generate_signal_with_guidance
 
 
 class TradingBot:
@@ -117,7 +118,7 @@ class TradingBot:
         print("=" * 60)
 
         # 0. Sentiment API health check
-        sentiment_health = check_sentiment_api_health()
+        sentiment_health = sentiment_service.health_check()
         print(f"📊 市场情绪API状态: {sentiment_health}")
         if "不可用" in sentiment_health or "警告" in sentiment_health:
             print("⚠️ 市场情绪API异常，将仅基于技术分析进行交易决策")
@@ -136,7 +137,7 @@ class TradingBot:
         print(f"价格变化: {price_data['price_change']:+.2f}%")
 
         # 3. Generate signal (reads guidance.json written by ai_commander.py)
-        signal_data = generate_signal_with_guidance(price_data)
+        signal_data = signal_service.generate(price_data)
 
         # 4. Execute trade
         self._trader.execute_trade(signal_data, price_data)

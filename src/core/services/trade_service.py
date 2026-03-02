@@ -28,9 +28,7 @@ from core.models.performance_tracker import PerformanceTracker, tracker
 from core.models.price_monitor import PriceMonitor
 from core.services.exchange_service import ExchangeService, exchange_service
 from core.services.position_service import PositionService, position_service
-
-# Signal service still lives in trading_bots — imported directly.
-from trading_bots.signals import should_execute_trade
+from core.services.signal_service import SignalService, signal_service
 
 
 class TradeService:
@@ -78,7 +76,7 @@ class TradeService:
             current_position = self._exchange.get_current_position()
             print(f"✅ 当前持仓: {current_position}")
 
-            if not should_execute_trade(signal_data, price_data, current_position):
+            if not signal_service.should_execute(signal_data, price_data, current_position):
                 print("⏸️ 交易条件不满足，跳过执行")
                 return
 

@@ -5,6 +5,7 @@ DeepSeek to infer macro bias and risk posture, then writes a compact guidance
 file the soldier reads synchronously.
 """
 
+import json
 import os
 import time
 import traceback
@@ -12,9 +13,8 @@ from datetime import datetime
 from pathlib import Path
 
 from trading_bots.guidance import save_guidance
-from trading_bots.main_bot import get_btc_ohlcv_enhanced
-from trading_bots.signals import analyze_with_deepseek_trend_king_with_retry
-from trading_bots.config import MODEL_NAME, deepseek_client
+from core.services.market_data_service import market_data_service
+from core.services.ai_service import ai_service
 
 
 LOG_PATH = Path(os.getenv("COMMANDER_LOG_PATH", "logs/commander.log"))
@@ -73,12 +73,12 @@ def to_guidance(signal_data):
 
 def update_guidance_once():
     try:
-        price_data = get_btc_ohlcv_enhanced()
+        price_data = market_data_service.get_enriched_ohlcv()
         if not price_data:
             log("Commander: 获取行情失败，保持当前指导")
             return
 
-        signal_data = analyze_with_deepseek_trend_king_with_retry(price_data)
+        signal_data = ai_service.analyze(price_data)
         guidance = to_guidance(signal_data)
         save_guidance(guidance)
         log(f"Commander 更新: bias={guidance['bias']} vol={guidance['volatility_mode']}")
@@ -96,8 +96,8 @@ def suggest_parameters_from_backtest(metrics: dict):
         f"\nMetrics: {json.dumps(metrics)}"
     )
     try:
-        resp = deepseek_client.chat.completions.create(
-            model=MODEL_NAME,
+        resp = ai_service._client.chat.completions.create(
+            model=ai_service._model,
             messages=[{"role": "system", "content": "You are a concise quant assistant."}, {"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=240,
@@ -107,7 +107,6 @@ def suggest_parameters_from_backtest(metrics: dict):
         return content
     except Exception as exc:
         log(f"Commander 参数建议失败: {exc}")
-        # fallback heuristic
         return json.dumps({
             "tweaks": ["Reduce leverage by 1-2x", "Tighten stop loss by 5-10%", "Lower base risk per trade by 25% until win-rate improves"],
             "risk_note": "Fallback heuristic used because AI call failed.",
