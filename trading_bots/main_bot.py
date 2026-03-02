@@ -37,7 +37,7 @@ from trading_bots.config import (
     performance_tracker,
     signal_history,
 )
-from trading_bots.execution import get_current_position
+from core.services.exchange_service import exchange_service
 
 
 def get_or_set_initial_balance(current_balance):
@@ -98,7 +98,7 @@ def export_dashboard_data(price_data, signal_data=None):
     global price_monitor
     try:
         # 获取当前持仓
-        current_position = get_current_position()
+        current_position = exchange_service.get_current_position()
         
         # 获取账户余额 - 使用total获取真实总资产（包含可用+保证金+盈亏）
         balance = exchange.fetch_balance()
