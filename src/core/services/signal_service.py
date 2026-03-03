@@ -479,4 +479,10 @@ class SignalService:
 
 
 # Module-level singleton — shared across trading_bot.py and trade_service.py
-signal_service = SignalService(tracker)
+signal_service = None
+
+def initialize(performance_tracker=tracker):
+    global signal_service
+    if signal_service is None:
+        signal_service = SignalService(performance_tracker)
+    return signal_service

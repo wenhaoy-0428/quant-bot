@@ -190,4 +190,10 @@ class SentimentService:
 
 
 # Module-level singleton
-sentiment_service = SentimentService()
+sentiment_service = None
+
+def initialize():
+    global sentiment_service
+    if sentiment_service is None:
+        sentiment_service = SentimentService()
+    return sentiment_service

@@ -26,9 +26,9 @@ from typing import Optional
 from core.config import config
 from core.models.performance_tracker import PerformanceTracker, tracker
 from core.models.price_monitor import PriceMonitor
-from core.services.exchange_service import ExchangeService, exchange_service
-from core.services.position_service import PositionService, position_service
-from core.services.signal_service import SignalService, signal_service
+from core.services.exchange_service import ExchangeService
+from core.services.position_service import PositionService
+from core.services.signal_service import SignalService
 
 
 class TradeService:
@@ -38,6 +38,7 @@ class TradeService:
         exchange:  Handles all raw OKX order calls.
         positions: Computes target contract size / leverage.
         tracker:   Records trade results and enforces daily limits.
+        signals:   Used to re-verify signal conditions before execution.
         monitor:   Trailing-stop state for the open position (optional;
                    created fresh if not provided).
     """
@@ -47,11 +48,13 @@ class TradeService:
         exchange: ExchangeService,
         positions: PositionService,
         tracker: PerformanceTracker,
+        signals: SignalService,
         monitor: Optional[PriceMonitor] = None,
     ) -> None:
         self._exchange = exchange
         self._positions = positions
         self._tracker = tracker
+        self._signals = signals
         self.price_monitor: PriceMonitor = monitor or PriceMonitor()
         # Rolling log of AI decisions — last 100 entries, used by dashboard
         self.trade_log: list = []
@@ -76,7 +79,7 @@ class TradeService:
             current_position = self._exchange.get_current_position()
             print(f"✅ 当前持仓: {current_position}")
 
-            if not signal_service.should_execute(signal_data, price_data, current_position):
+            if not self._signals.should_execute(signal_data, price_data, current_position):
                 print("⏸️ 交易条件不满足，跳过执行")
                 return
 
@@ -471,8 +474,15 @@ class TradeService:
 
 
 # Shared singleton — wired to the shared tracker and position_service.
-trade_service = TradeService(
-    exchange=exchange_service,
-    positions=position_service,
-    tracker=tracker,
-)
+trade_service = None
+
+def initialize(exchange, positions, signals, track=tracker):
+    global trade_service
+    if trade_service is None:
+        trade_service = TradeService(
+            exchange=exchange,
+            positions=positions,
+            tracker=track,
+            signals=signals,
+        )
+    return trade_service

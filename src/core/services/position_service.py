@@ -147,4 +147,10 @@ class PositionService:
 # TradeService and main.py import this directly.
 # Uses the shared tracker singleton from performance_tracker so all services
 # read from the same win_rate and trade counts.
-position_service = PositionService(exchange=exchange_service, tracker=tracker)
+position_service = None
+
+def initialize(exchange, track=tracker):
+    global position_service
+    if position_service is None:
+        position_service = PositionService(exchange, track)
+    return position_service

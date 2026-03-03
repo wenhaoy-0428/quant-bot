@@ -276,8 +276,14 @@ class AIService:
 
 
 # Module-level singleton — for use by ai_commander.py
-ai_service = AIService(
-    cfg=_default_config,
-    signal_svc=_default_signals,
-    sentiment_svc=_default_sentiment,
-)
+ai_service = None
+
+def initialize(config, signals, sentiment):
+    global ai_service
+    if ai_service is None:
+        ai_service = AIService(
+            cfg=config,
+            signal_svc=signals,
+            sentiment_svc=sentiment,
+        )
+    return ai_service

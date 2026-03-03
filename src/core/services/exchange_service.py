@@ -156,11 +156,13 @@ class ExchangeService:
         
         # Load markets on initialization for immediate availability
         print("🔄 Loading exchange markets...")
-        try :
+        try:
             self.exchange.load_markets()
             print(f"✅ Loaded {len(self.exchange.markets)} markets")
         except Exception as e:
-            print(f"❌ Failed to load markets during initialization: {e}")
+            print(f"❌ CRITICAL ERROR: Failed to load markets during initialization: {e}")
+            print("The application cannot continue without exchange connection.")
+            raise e
 
         self._initialized = True
     
@@ -845,6 +847,12 @@ class ExchangeService:
 # Markets are loaded during initialization, making them immediately available
 # 单例实例 - 导入时自动初始化
 # 市场数据在初始化期间加载，使其立即可用
-exchange_service = ExchangeService()
+exchange_service = None
 
-__all__ = ["ExchangeService", "exchange_service"]
+def initialize():
+    global exchange_service
+    if exchange_service is None:
+        exchange_service = ExchangeService()
+    return exchange_service
+
+__all__ = ["ExchangeService", "exchange_service", "initialize"]

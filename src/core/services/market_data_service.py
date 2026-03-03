@@ -142,4 +142,10 @@ class MarketDataService:
 
 
 # Shared singleton — import this directly instead of instantiating manually.
-market_data_service = MarketDataService(exchange=exchange_service)
+market_data_service = None
+
+def initialize(exchange):
+    global market_data_service
+    if market_data_service is None:
+        market_data_service = MarketDataService(exchange)
+    return market_data_service

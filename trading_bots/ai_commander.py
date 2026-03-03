@@ -13,8 +13,8 @@ from datetime import datetime
 from pathlib import Path
 
 from trading_bots.guidance import save_guidance
-from core.services.market_data_service import market_data_service
-from core.services.ai_service import ai_service
+import core.services.market_data_service as mds_mod
+import core.services.ai_service as ais_mod
 
 
 LOG_PATH = Path(os.getenv("COMMANDER_LOG_PATH", "logs/commander.log"))
@@ -73,12 +73,20 @@ def to_guidance(signal_data):
 
 def update_guidance_once():
     try:
-        price_data = market_data_service.get_enriched_ohlcv()
+        # Use module-level access to get the initialized service instance
+        mds = mds_mod.market_data_service
+        ais = ais_mod.ai_service
+        
+        if not mds or not ais:
+            log("Commander: 服务未初始化")
+            return
+
+        price_data = mds.get_enriched_ohlcv()
         if not price_data:
             log("Commander: 获取行情失败，保持当前指导")
             return
 
-        signal_data = ai_service.analyze(price_data)
+        signal_data = ais.analyze(price_data)
         guidance = to_guidance(signal_data)
         save_guidance(guidance)
         log(f"Commander 更新: bias={guidance['bias']} vol={guidance['volatility_mode']}")
@@ -89,6 +97,11 @@ def update_guidance_once():
 
 def suggest_parameters_from_backtest(metrics: dict):
     """Use DeepSeek to suggest parameter tweaks based on backtest metrics."""
+    # Use module-level access
+    ais = ais_mod.ai_service
+    if not ais:
+        return "{}"
+
     prompt = (
         "You are a trading risk assistant. Given backtest metrics, propose 3 concise parameter tweaks "
         "to improve risk-adjusted returns. Respond in compact JSON with keys: tweaks (array of strings), "
@@ -96,8 +109,8 @@ def suggest_parameters_from_backtest(metrics: dict):
         f"\nMetrics: {json.dumps(metrics)}"
     )
     try:
-        resp = ai_service._client.chat.completions.create(
-            model=ai_service._model,
+        resp = ais._client.chat.completions.create(
+            model=ais._model,
             messages=[{"role": "system", "content": "You are a concise quant assistant."}, {"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=240,
@@ -115,6 +128,29 @@ def suggest_parameters_from_backtest(metrics: dict):
 
 
 def main():
+    try:
+        from core.services import (
+            exchange_service,
+            sentiment_service,
+            signal_service,
+        )
+        from core.config import config
+        from core.models.performance_tracker import tracker
+
+        log("AI Commander 初始化服务中...")
+        ex = exchange_service.initialize()
+        sen = sentiment_service.initialize()
+        sig = signal_service.initialize(tracker)
+        mds_mod.initialize(ex)
+        ais_mod.initialize(config, sig, sen)
+        log("✅ 服务初始化完成")
+    except Exception as e:
+        log(f"❌ 服务初始化失败: {e}")
+        # Continue mostly to allow loop to start and maybe retry? 
+        # But if init failed, update_guidance_once will fail too.
+        # We'll just let it run and log errors.
+        pass
+
     interval_min = int(os.getenv("COMMANDER_INTERVAL_MINUTES", "60"))
     log(f"AI Commander 启动，刷新间隔: {interval_min} 分钟")
     while True:

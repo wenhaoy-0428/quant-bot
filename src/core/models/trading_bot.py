@@ -19,31 +19,37 @@ import time
 from datetime import datetime
 
 from core.config import config
-from core.services.exchange_service import ExchangeService, exchange_service
-from core.services.market_data_service import MarketDataService, market_data_service
-from core.services.sentiment_service import SentimentService, sentiment_service
-from core.services.signal_service import SignalService, signal_service
-from core.services.trade_service import TradeService, trade_service
+from core.services.exchange_service import ExchangeService
+from core.services.market_data_service import MarketDataService
+from core.services.sentiment_service import SentimentService
+from core.services.signal_service import SignalService
+from core.services.trade_service import TradeService
 
 
 class TradingBot:
     """Runs the BTC/USDT trend-following strategy on a 15-minute cadence.
 
     Args:
-        exchange:    Exchange adapter (default: module-level singleton).
-        market_data: OHLCV + indicator service (default: module-level singleton).
-        trader:      Order execution service (default: module-level singleton).
+        exchange:    Exchange adapter.
+        market_data: OHLCV + indicator service.
+        trader:      Order execution service.
+        sentiment:   Sentiment analysis service.
+        signals:     Signal generation service.
     """
 
     def __init__(
         self,
-        exchange: ExchangeService = exchange_service,
-        market_data: MarketDataService = market_data_service,
-        trader: TradeService = trade_service,
+        exchange: ExchangeService,
+        market_data: MarketDataService,
+        trader: TradeService,
+        sentiment: SentimentService,
+        signals: SignalService,
     ) -> None:
         self._exchange = exchange
         self._market_data = market_data
         self._trader = trader
+        self._sentiment = sentiment
+        self._signals = signals
 
     # ------------------------------------------------------------------
     # Public API
@@ -118,7 +124,7 @@ class TradingBot:
         print("=" * 60)
 
         # 0. Sentiment API health check
-        sentiment_health = sentiment_service.health_check()
+        sentiment_health = self._sentiment.health_check()
         print(f"📊 市场情绪API状态: {sentiment_health}")
         if "不可用" in sentiment_health or "警告" in sentiment_health:
             print("⚠️ 市场情绪API异常，将仅基于技术分析进行交易决策")
@@ -137,7 +143,7 @@ class TradingBot:
         print(f"价格变化: {price_data['price_change']:+.2f}%")
 
         # 3. Generate signal (reads guidance.json written by ai_commander.py)
-        signal_data = signal_service.generate(price_data)
+        signal_data = self._signals.generate(price_data)
 
         # 4. Execute trade
         self._trader.execute_trade(signal_data, price_data)
